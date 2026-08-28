@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b6e2e">
+<title>Strokes Gained Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230b6e2e'/%3E%3Ccircle cx='50' cy='42' r='20' fill='%23fff'/%3E%3Crect x='47' y='42' width='6' height='40' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%230b6e2e'/%3E%3Ccircle cx='50' cy='42' r='20' fill='%23fff'/%3E%3Crect x='47' y='42' width='6' height='40' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --green:#0b6e2e; --green-dark:#08541f; --red:#b3261e; --amber:#a86400;
+    --ink:#111111; --sub:#4b4b4b; --line:#d8d8d8; --bg:#ffffff; --card:#f5f6f4;
+    --tee:#2b6cb0; --fairway:#2f8f3a; --rough:#6b8e23; --bunker:#c99a2e; --fringe:#4fae8a; --recovery:#8a4b2b; --putt:#5a5a5a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none; user-select:none;
+  }
+  input{user-select:text;}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:24px;}
+  .screen{display:none; padding:14px 14px 90px 14px; flex:1;}
+  .screen.active{display:block;}
+  h1{font-size:22px;margin:6px 0 14px 0;}
+  h2{font-size:18px;margin:0 0 10px 0;}
+  .topbar{
+    position:sticky; top:0; z-index:20; background:var(--green); color:#fff; padding:12px 14px;
+    display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px;
+  }
+  .topbar .title{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .topbar button.icon{
+    background:rgba(255,255,255,0.18); border:none; color:#fff; border-radius:10px;
+    width:38px;height:38px;font-size:19px;line-height:1; flex-shrink:0;
+  }
+  .baseline-pill{
+    background:rgba(255,255,255,0.22); border:none; color:#fff; border-radius:20px;
+    padding:6px 10px; font-size:12px; font-weight:700; flex-shrink:0;
+  }
+  .btn{
+    display:block; width:100%; padding:16px; margin:8px 0; border-radius:14px; border:2px solid var(--line);
+    background:var(--card); color:var(--ink); font-size:18px; font-weight:700; text-align:center;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn.primary{background:var(--green); border-color:var(--green-dark); color:#fff;}
+  .btn.danger{background:#fdeceb; border-color:var(--red); color:var(--red);}
+  .btn.small{padding:10px; font-size:15px; width:auto; display:inline-block;}
+  .row{display:flex; gap:10px;}
+  .row > *{flex:1;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;}
+  .card{background:var(--card); border-radius:10px; padding:14px; margin:10px 0; border:1px solid var(--line);}
+  .panel-title{font-size:16px; font-weight:800; margin:0 0 10px 0; color:var(--ink);}
+  .hole-block{padding:10px 0; border-bottom:1px solid var(--line);}
+  .hole-block:last-child{border-bottom:none; padding-bottom:0;}
+  .hole-block:first-child{padding-top:0;}
+  label{font-size:13px; color:var(--sub); font-weight:600; text-transform:uppercase; letter-spacing:.04em;}
+  input[type=text], input[type=number]{
+    width:100%; padding:14px; font-size:20px; border-radius:12px; border:2px solid var(--line); margin-top:6px; background:#fff;
+  }
+  .lie-btn{padding:14px 4px; border-radius:14px; border:2px solid var(--line); background:#fff; font-weight:700; font-size:13px; text-align:center;}
+  .lie-btn.sel{color:#fff; border-color:transparent;}
+  .lie-btn[data-lie=tee].sel{background:var(--tee);}
+  .lie-btn[data-lie=fairway].sel{background:var(--fairway);}
+  .lie-btn[data-lie=rough].sel{background:var(--rough);}
+  .lie-btn[data-lie=sand].sel{background:var(--bunker); color:#3a2a00;}
+  .lie-btn[data-lie=fringe].sel{background:var(--fringe);}
+  .lie-btn[data-lie=recovery].sel{background:var(--recovery);}
+  .lie-btn[data-lie=green].sel{background:var(--putt);}
+  .stepper{display:flex; align-items:center; gap:8px; margin-top:6px;}
+  .stepper button{width:56px;height:56px;border-radius:50%;border:2px solid var(--line);background:#fff;font-size:26px;font-weight:800;}
+  .stepper input{text-align:center; flex:1; font-size:26px; font-weight:800;}
+  .unit-toggle{display:flex; border:2px solid var(--line); border-radius:12px; overflow:hidden; margin-top:6px;}
+  .unit-toggle div{flex:1; text-align:center; padding:10px; font-weight:700;}
+  .unit-toggle div.sel{background:var(--green); color:#fff;}
+  .outcome-btn{padding:14px 8px; font-size:14px; font-weight:700; border-radius:14px; border:2px solid var(--line); background:#fff;}
+  .outcome-btn.normal{border-color:var(--green);}
+  .outcome-btn.holed{border-color:var(--green); background:var(--green); color:#fff;}
+  .outcome-btn.other{border-color:var(--sub); color:var(--sub);}
+  .outcome-btn.penalty{border-color:var(--red); color:var(--red);}
+  .outcome-btn.unplayable{border-color:var(--amber); color:var(--amber);}
+  .banner{background:#fff3cd; border:2px solid var(--amber); color:#5c4300; padding:10px 12px; border-radius:12px; font-weight:700; font-size:14px; margin-bottom:10px;}
+  .banner.info{background:#e8f1fb; border-color:var(--tee); color:#0d3a63;}
+  .sg-pill{padding:3px 10px; border-radius:20px; font-weight:800; font-size:13px; display:inline-block;}
+  .sg-pos{background:#e3f4e6; color:var(--green-dark);}
+  .sg-neg{background:#fdeceb; color:var(--red);}
+  .sg-zero{background:#fff3cd; color:#5c4300;}
+  .stat-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line);}
+  .stat-row:last-child{border-bottom:none;}
+  .shot-item{display:flex; justify-content:space-between; align-items:center; padding:8px 4px; border-bottom:1px solid var(--line); font-size:14px;}
+  .hole-block .shot-item:last-child{border-bottom:none;}
+  .shot-item .meta{color:var(--sub); font-size:12px;}
+  .muted{color:var(--sub); font-size:13px;}
+  .par-picker{display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .par-picker .holeno{width:52px; flex-shrink:0; font-weight:700; font-size:13px;}
+  .par-num{width:40px;height:40px;border-radius:50%;border:2px solid var(--line); background:#fff; font-weight:800; font-size:15px; flex-shrink:0;}
+  .par-num.sel{background:var(--green); color:#fff; border-color:var(--green-dark);}
+  .yardage-input{width:76px; padding:8px; font-size:15px; border-radius:10px; border:2px solid var(--line); margin-left:auto; text-align:center;}
+  .fab-row{position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line); padding:10px 14px; max-width:520px; margin:0 auto; z-index:30;}
+  .center{text-align:center;}
+  .hist-item{padding:12px; border-radius:10px; border:1px solid var(--line); margin-bottom:8px; background:var(--card);}
+  .hist-item .top{display:flex; justify-content:space-between; font-weight:700;}
+  .score-badge{padding:5px 10px 4px 10px; border-radius:10px; font-weight:800; font-size:13px; display:inline-block; line-height:1; vertical-align:middle; text-align:center;}
+  .score-eagle{background:#f5d90a; color:#3a2a00;}
+  .score-birdie{background:#2b6cb0; color:#fff;}
+  .score-par{background:#0b6e2e; color:#fff;}
+  .score-evenpar{background:#eee; color:#555;}
+  .score-bogey{background:#7a1010; color:#fff;}
+  .score-doubleplus{background:#111111; color:#fff;}
+  .cat-details{border-bottom:1px solid var(--line);}
+  .cat-details:last-child{border-bottom:none;}
+  .cat-summary{display:flex; justify-content:space-between; align-items:center; padding:10px 0; cursor:pointer; list-style:none; font-weight:normal;}
+  .cat-label{font-size:14px; font-weight:normal !important;}
+  .cat-summary::-webkit-details-marker{display:none;}
+  .cat-summary::marker{content:'';}
+  .cat-summary .chev{color:var(--sub); margin-left:8px; font-size:12px;}
+  details[open] > .cat-summary .chev{transform:rotate(90deg); display:inline-block;}
+  .cat-shotlist{padding:2px 0 10px 0;}
+  .scorecard-grid{display:grid; grid-template-columns:repeat(9,1fr); gap:6px;}
+  .scorecard-cell{border-radius:10px; padding:8px 2px; text-align:center; font-weight:800;}
+  .scorecard-cell .holeno{font-size:11px; font-weight:600; opacity:0.85;}
+  .scorecard-cell .strokes{font-size:16px;}
+  .rstrip-row{display:flex; align-items:stretch; padding-top:8px;}
+  .rstrip-wrap{position:relative; overflow-x:auto; padding:0 10px 4px 0; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-width:0;}
+  .rstrip{display:flex; gap:5px;}
+  .rstrip-cell{flex:0 0 32px; height:38px; border-radius:8px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; font-size:10px; font-weight:800; background:#eee; color:#999;
+    border:2px solid transparent;}
+  .rstrip-cell .hn{font-size:8px; font-weight:700; opacity:0.85; line-height:1;}
+  .rstrip-cell .val{line-height:1.1;}
+  .rstrip-cell.current{border-color:var(--green);}
+  .rstrip-cell.gap{background:#f2f2f2; color:#bbb;}
+  .rstrip-cell.inprogress{background:#fff3cd; color:#5c4300;}
+  .rstrip-cell.pos{background:#e3f4e6; color:var(--green-dark);}
+  .rstrip-cell.neg{background:#fdeceb; color:var(--red);}
+  .rstrip-cell.zero{background:#fff3cd; color:#5c4300;}
+  /* The Total pill is a plain flex sibling, not part of the scrollable
+     strip at all — so it is genuinely static, never sits underneath
+     scrolled content, and needs no sticky/shadow trickery. */
+  .rstrip-total{flex:0 0 auto; align-self:flex-start; min-width:51px; height:38px; border-radius:8px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:0 6px; margin-right:6px; box-sizing:border-box;}
+  .rstrip-total .hn{font-size:8px; font-weight:700; opacity:0.85; line-height:1; text-align:center;}
+  .rstrip-total .val{line-height:1.1; font-size:13px; text-align:center;}
+  /* Edge fade on the scrollable strip: a CSS mask directly fades the
+     alpha channel of the actual scrolled content (not an overlay layered
+     on top), so it can't be defeated by z-index/compositing quirks. The
+     exact mask is set inline via JS (updateStripFades) since it depends
+     on which edges currently have more content to reveal. */
+  .rstrip-wrap{-webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;}
+  .hole-nav-header{display:flex; align-items:center; justify-content:center; gap:18px; padding:10px 6px 2px 6px;}
+  .hole-nav-header .hole-nav-title{font-size:19px; font-weight:800;}
+  .hole-nav-arrow{width:44px; height:44px; border-radius:50%; border:2px solid var(--line); background:#fff; font-size:20px; font-weight:800; color:var(--ink); flex-shrink:0;}
+  .hole-nav-arrow:disabled{opacity:0.3;}
+  .course-item{padding:12px; border-radius:10px; border:1px solid var(--line); margin-bottom:8px; background:var(--card); display:flex; justify-content:space-between; align-items:center;}
+  a.linklike{color:var(--green-dark); font-weight:700;}
+  svg text{font-family:inherit;}
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100;
+    align-items:flex-end; justify-content:center;
+  }
+  .overlay.show{display:flex;}
+  .sheet{background:#fff; width:100%; max-width:520px; border-radius:20px 20px 0 0; padding:18px; max-height:80vh; overflow-y:auto;}
+  .sheet-title{font-size:17px; font-weight:800; margin-bottom:10px;}
+  .radio-row{display:flex; align-items:center; gap:10px; padding:12px; border:2px solid var(--line); border-radius:12px; margin-bottom:8px; font-weight:700;}
+  .radio-row.sel{border-color:var(--green); background:#e3f4e6;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="topbar"><span class="title">⛳ Strokes Gained</span><button class="baseline-pill" data-baseline-pill>🎯 Pro</button></div>
+    <div style="padding:16px 2px;">
+      <h1>Track your round</h1>
+      <div id="resumeBox" style="display:none;">
+        <button class="btn primary" id="btnResume">Resume round in progress</button>
+      </div>
+      <button class="btn primary" id="btnNewRound">Start New Round</button>
+      <button class="btn" id="btnHistory">Past Rounds</button>
+      <button class="btn" id="btnTrends">Trends</button>
+      <p class="muted" style="margin-top:16px;">Baseline strokes-gained tables are an approximate model, not tuned to your personal skill level unless you select a handicap above. Tap the 🎯 badge anytime to change what you're measured against — it recalculates every saved round.</p>
+    </div>
+  </div>
+
+  <!-- NEW ROUND SETUP -->
+  <div class="screen" id="screen-newround">
+    <div class="topbar"><button class="icon" data-back="screen-home">‹</button><span class="title">New Round</span></div>
+    <div class="card">
+      <label>Course (optional)</label>
+      <input type="text" id="courseName" placeholder="e.g. Pebble Beach">
+    </div>
+    <div class="card" id="savedCoursesBox" style="display:none;">
+      <div class="panel-title">Saved courses</div>
+      <div id="savedCoursesList"></div>
+    </div>
+    <button class="btn small" id="btnManageCourses" style="margin-bottom:6px;">Manage Saved Courses</button>
+    <div class="card">
+      <label>Holes</label>
+      <div class="grid2" style="margin-top:6px;">
+        <button class="btn small holes-btn sel" data-holes="18">18 holes</button>
+        <button class="btn small holes-btn" data-holes="9">9 holes</button>
+      </div>
+    </div>
+    <div class="card" id="courseNoteBox" style="display:none;"></div>
+    <div class="card">
+      <div class="panel-title">Par &amp; yardage per hole</div>
+      <p class="muted" style="margin:-6px 0 6px 0;">Tap par, edit yardage if known.</p>
+      <div id="parList"></div>
+    </div>
+    <button class="btn primary" id="btnBeginRound">Begin Round</button>
+  </div>
+
+  <!-- MANAGE COURSES -->
+  <div class="screen" id="screen-courses">
+    <div class="topbar"><button class="icon" data-back="screen-newround">‹</button><span class="title">Saved Courses</span></div>
+    <div id="coursesList"></div>
+    <button class="btn primary" id="btnAddCourse">+ Add New Course</button>
+  </div>
+
+  <!-- COURSE BUILDER -->
+  <div class="screen" id="screen-coursebuilder">
+    <div class="topbar"><button class="icon" data-back="screen-courses">‹</button><span class="title" id="courseBuilderTitle">Add Course</span></div>
+    <div class="card">
+      <label>Course name</label>
+      <input type="text" id="cbName" placeholder="e.g. Porters Park (white)">
+    </div>
+    <div class="card">
+      <label>Holes</label>
+      <div class="grid2" style="margin-top:6px;">
+        <button class="btn small cb-holes-btn sel" data-holes="18">18 holes</button>
+        <button class="btn small cb-holes-btn" data-holes="9">9 holes</button>
+      </div>
+    </div>
+    <div class="card" id="cbNoteBox" style="display:none;"></div>
+    <div class="card">
+      <div class="panel-title">Par &amp; yardage per hole</div>
+      <div id="cbParList"></div>
+    </div>
+    <button class="btn primary" id="btnSaveCourse">Save Course</button>
+  </div>
+
+  <!-- PLAY -->
+  <div class="screen" id="screen-play">
+    <div class="topbar">
+      <button class="icon" id="btnPlayMenu">☰</button>
+      <span class="title" id="playHoleTitle">Hole 1</span>
+      <button class="baseline-pill" data-baseline-pill>🎯 Pro</button>
+    </div>
+    <div class="rstrip-row">
+      <div class="rstrip-total" id="rstripTotal"></div>
+      <div class="rstrip-wrap" id="rstripWrap">
+        <div class="rstrip" id="roundStrip"></div>
+      </div>
+    </div>
+    <div class="hole-nav-header" id="holeNavHeader"></div>
+    <div id="playBody"></div>
+  </div>
+
+  <!-- HOLE SUMMARY -->
+  <div class="screen" id="screen-holesummary">
+    <div class="topbar"><span class="title">Hole Complete</span></div>
+    <div id="holeSummaryBody"></div>
+  </div>
+
+  <!-- PREVIOUS HOLES LIST (mid-round edit) -->
+  <div class="screen" id="screen-holelist">
+    <div class="topbar"><button class="icon" data-back="screen-play">‹</button><span class="title">Edit a Previous Hole</span></div>
+    <div id="holeListBody"></div>
+  </div>
+
+  <!-- HOLE REVIEW (mid-round edit of a single previous hole) -->
+  <div class="screen" id="screen-holereview">
+    <div class="topbar"><button class="icon" data-back="screen-holelist">‹</button><span class="title" id="holeReviewTitle">Hole</span></div>
+    <div id="holeReviewBody"></div>
+  </div>
+
+  <!-- ROUND SUMMARY -->
+  <div class="screen" id="screen-roundsummary">
+    <div class="topbar"><span class="title">Round Complete</span></div>
+    <div id="roundSummaryBody"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="screen" id="screen-history">
+    <div class="topbar"><button class="icon" data-back="screen-home">‹</button><span class="title">Past Rounds</span><button class="baseline-pill" data-baseline-pill>🎯 Pro</button></div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- ROUND DETAIL -->
+  <div class="screen" id="screen-rounddetail">
+    <div class="topbar"><button class="icon" data-back="screen-history">‹</button><span class="title" id="rdTitle">Round</span><button class="baseline-pill" data-baseline-pill>🎯 Pro</button></div>
+    <div id="rdBody"></div>
+  </div>
+
+  <!-- TRENDS -->
+  <div class="screen" id="screen-trends">
+    <div class="topbar"><button class="icon" data-back="screen-home">‹</button><span class="title">Trends</span><button class="baseline-pill" data-baseline-pill>🎯 Pro</button></div>
+    <div id="trendsBody"></div>
+  </div>
+
+</div>
+
+<!-- BASELINE CHOOSER OVERLAY -->
+<div class="overlay" id="baselineOverlay">
+  <div class="sheet">
+    <div class="sheet-title">Measure strokes gained against…</div>
+    <div class="radio-row" data-btype="pro">Pro (Tour Average)</div>
+    <div class="radio-row" data-btype="scratch">Scratch (0 handicap)</div>
+    <div class="radio-row" data-btype="handicap">Custom handicap</div>
+    <div id="handicapInputBox" style="display:none; margin:8px 0 14px 0;">
+      <label>Handicap index</label>
+      <input type="number" id="handicapValueInput" step="0.1" placeholder="e.g. 12.4">
+    </div>
+    <button class="btn primary" id="btnSaveBaseline">Save</button>
+    <button class="btn" id="btnCancelBaseline">Cancel</button>
+  </div>
+</div>
+
+<!-- GENERIC ACTION SHEET OVERLAY -->
+<div class="overlay" id="actionSheetOverlay">
+  <div class="sheet">
+    <div class="sheet-title sheet-title-text">Menu</div>
+    <div class="sheet-actions"></div>
+  </div>
+</div>
+
+<!-- EDIT SHOT OVERLAY (avoids window.prompt, which many mobile WebViews
+     don't implement even though alert()/confirm() work) -->
+<div class="overlay" id="editShotOverlay">
+  <div class="sheet">
+    <div class="sheet-title">Edit Shot</div>
+    <label>Lie</label>
+    <div class="grid3" style="margin-top:6px;">
+      <button type="button" class="lie-btn" data-eslie="tee" data-lie="tee">Tee</button>
+      <button type="button" class="lie-btn" data-eslie="fairway" data-lie="fairway">Fairway</button>
+      <button type="button" class="lie-btn" data-eslie="rough" data-lie="rough">Rough</button>
+    </div>
+    <div class="grid3" style="margin-top:10px;">
+      <button type="button" class="lie-btn" data-eslie="sand" data-lie="sand">Bunker</button>
+      <button type="button" class="lie-btn" data-eslie="fringe" data-lie="fringe">Fringe</button>
+      <button type="button" class="lie-btn" data-eslie="recovery" data-lie="recovery">Recovery</button>
+    </div>
+    <div style="margin-top:10px;">
+      <button type="button" class="lie-btn" data-eslie="green" data-lie="green" style="width:100%; display:block;">Green</button>
+    </div>
+    <label style="margin-top:14px; display:block;">Distance</label>
+    <div class="unit-toggle">
+      <div data-esunit="yards">Yards</div>
+      <div data-esunit="feet">Feet</div>
+    </div>
+    <div class="stepper">
+      <button type="button" data-esstep="-1">−</button>
+      <input type="number" id="editShotDistInput" inputmode="numeric">
+      <button type="button" data-esstep="1">+</button>
+    </div>
+    <button class="btn primary" id="btnSaveEditShot" style="margin-top:14px;">Save</button>
+    <button class="btn" id="btnCancelEditShot">Cancel</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   STROKES-GAINED BASELINE TABLES  (tune these to recalibrate the model)
+   Values = expected strokes to hole out for a scratch/tour-average golfer
+   from a given distance + lie. Distances for tee/fairway/rough/sand/recovery
+   are in YARDS. Green ("putting") distances are in FEET. Approximations
+   inspired by Mark Broadie's published research, not the exact proprietary
+   PGA Tour model. "sand" is the internal key; the UI displays it as "Bunker".
+   ========================================================================= */
+const BASELINES = {
+  tee: [
+    [100,2.80],[125,2.90],[150,3.00],[175,3.10],[200,3.23],[225,3.34],
+    [250,3.45],[275,3.55],[300,3.65],[325,3.74],[350,3.82],[375,3.89],
+    [400,3.95],[425,3.99],[450,4.02],[475,4.10],[500,4.20],[525,4.28],
+    [550,4.35],[575,4.41],[600,4.47]
+  ],
+  fairway: [
+    [0,2.00],[10,2.28],[20,2.40],[30,2.52],[40,2.62],[50,2.70],[60,2.78],
+    [70,2.85],[80,2.91],[90,2.98],[100,3.00],[120,3.05],[140,3.12],
+    [160,3.17],[180,3.25],[200,3.23],[220,3.29],[240,3.37],[260,3.44],
+    [280,3.53],[300,3.58],[320,3.65],[340,3.73],[360,3.83],[380,3.90],
+    [400,3.95],[450,4.10],[500,4.30],[550,4.45],[600,4.60]
+  ],
+  rough: [
+    [0,2.10],[10,2.35],[20,2.48],[30,2.62],[40,2.74],[50,2.84],[60,2.92],
+    [70,3.00],[80,3.07],[90,3.14],[100,3.17],[120,3.23],[140,3.30],
+    [160,3.37],[180,3.45],[200,3.44],[220,3.51],[240,3.60],[260,3.68],
+    [280,3.78],[300,3.84],[320,3.92],[340,4.00],[360,4.10],[380,4.18],
+    [400,4.23],[450,4.38],[500,4.55],[550,4.68],[600,4.80]
+  ],
+  sand: [ // displayed as "Bunker"
+    [0,2.35],[10,2.55],[20,2.68],[30,2.80],[40,2.90],[50,3.00],[60,3.08],
+    [70,3.15],[80,3.22],[90,3.28],[100,3.30],[120,3.38],[140,3.45],
+    [160,3.52],[180,3.60],[200,3.58],[220,3.65],[240,3.73],[260,3.82],
+    [280,3.90],[300,3.97],[350,4.10],[400,4.25],[450,4.40],[500,4.55]
+  ],
+  recovery: [
+    [0,2.60],[10,2.85],[20,3.00],[30,3.15],[40,3.28],[50,3.40],[60,3.50],
+    [70,3.58],[80,3.65],[90,3.72],[100,3.75],[120,3.85],[140,3.95],
+    [160,4.05],[180,4.15],[200,4.15],[250,4.30],[300,4.45],[350,4.60],
+    [400,4.75],[450,4.90],[500,5.05]
+  ],
+  green: [ // feet
+    [0,1.00],[1,1.001],[2,1.02],[3,1.05],[4,1.13],[5,1.22],[6,1.29],
+    [7,1.35],[8,1.42],[9,1.47],[10,1.52],[12,1.60],[15,1.70],[18,1.79],
+    [20,1.87],[25,1.98],[30,2.06],[35,2.13],[40,2.18],[50,2.28],
+    [60,2.36],[70,2.43],[80,2.50],[90,2.56],[100,2.61]
+  ],
+  fringe: [ // yards — the collar just off the green: better than fairway
+    // and rough at the same distance, a little worse than putting from an
+    // equivalent distance on the green surface itself.
+    [0,1.75],[5,1.95],[10,2.15],[15,2.30],[20,2.42],[25,2.52],
+    [30,2.62],[40,2.78],[50,2.92]
+  ]
+};
+
+const LIE_LABEL = {tee:'Tee', fairway:'Fairway', rough:'Rough', sand:'Bunker', fringe:'Fringe', recovery:'Recovery', green:'Green'};
+function normalizeLieInput(s){
+  if (!s) return null;
+  const t = s.trim().toLowerCase();
+  if (t === 'bunker' || t === 'sand') return 'sand';
+  if (BASELINES[t]) return t;
+  return null;
+}
+
+function lookup(table, d){
+  if (d <= table[0][0]) return table[0][1];
+  const n = table.length;
+  if (d >= table[n-1][0]){
+    const [x1,y1] = table[n-2], [x2,y2] = table[n-1];
+    const slope = (y2-y1)/(x2-x1);
+    return y2 + slope*(d-x2);
+  }
+  for (let i=0;i<n-1;i++){
+    const [x1,y1] = table[i], [x2,y2] = table[i+1];
+    if (d>=x1 && d<=x2){
+      const t = (d-x1)/(x2-x1);
+      return y1 + t*(y2-y1);
+    }
+  }
+  return table[n-1][1];
+}
+
+function toBaselineUnit(lie, distance, unit){
+  if (lie === 'green') return unit === 'yards' ? distance*3 : distance;
+  return unit === 'feet' ? distance/3 : distance;
+}
+function distanceInYards(lie, distance, unit){
+  const bu = toBaselineUnit(lie, distance, unit);
+  return lie === 'green' ? bu/3 : bu;
+}
+
+/* ---- Skill-level adjustment model -------------------------------------
+   The BASELINES tables above represent a Pro / Tour-Average golfer.
+   To show strokes gained relative to a Scratch (0-handicap) amateur or an
+   arbitrary handicap, we scale the "difficulty above a tap-in" portion of
+   the pro baseline upward using an approximate adjustment curve per
+   category. This is a simplified, illustrative model (not derived from a
+   published handicap-specific ShotLink dataset) — tune REL_ADJUST_POINTS
+   to recalibrate. hcp = -6 is treated as pro-equivalent (adjustment = 0).
+------------------------------------------------------------------------- */
+const REL_ADJUST_POINTS = [
+  {hcp:-6, offTee:0.00, approach:0.00, shortGame:0.00, recovery:0.00, putting:0.00},
+  {hcp:0,  offTee:0.05, approach:0.12, shortGame:0.08, recovery:0.10, putting:0.06},
+  {hcp:5,  offTee:0.16, approach:0.30, shortGame:0.18, recovery:0.24, putting:0.14},
+  {hcp:10, offTee:0.28, approach:0.50, shortGame:0.30, recovery:0.40, putting:0.22},
+  {hcp:15, offTee:0.40, approach:0.72, shortGame:0.43, recovery:0.58, putting:0.30},
+  {hcp:20, offTee:0.53, approach:0.95, shortGame:0.56, recovery:0.76, putting:0.39},
+  {hcp:25, offTee:0.66, approach:1.18, shortGame:0.70, recovery:0.94, putting:0.48},
+  {hcp:30, offTee:0.79, approach:1.40, shortGame:0.84, recovery:1.12, putting:0.57}
+];
+function interpAdjust(hcp, cat){
+  const pts = REL_ADJUST_POINTS;
+  if (hcp <= pts[0].hcp) return pts[0][cat];
+  const n = pts.length;
+  if (hcp >= pts[n-1].hcp){
+    const a=pts[n-2], b=pts[n-1];
+    const slope = (b[cat]-a[cat])/(b.hcp-a.hcp);
+    return b[cat] + slope*(hcp-b.hcp);
+  }
+  for (let i=0;i<n-1;i++){
+    const a=pts[i], b=pts[i+1];
+    if (hcp>=a.hcp && hcp<=b.hcp){
+      const t=(hcp-a.hcp)/(b.hcp-a.hcp);
+      return a[cat] + t*(b[cat]-a[cat]);
+    }
+  }
+  return pts[n-1][cat];
+}
+// Simplified category mapping for the adjustment model (doesn't need par)
+function baselineAdjustCategory(lie, distance, unit){
+  if (lie === 'tee') return 'offTee';
+  if (lie === 'green') return 'putting';
+  if (lie === 'recovery') return 'recovery';
+  if (lie === 'fringe') return 'shortGame';
+  return distanceInYards(lie, distance, unit) <= 30 ? 'shortGame' : 'approach';
+}
+function expectedStrokes(lie, distance, unit, baseline){
+  const proVal = lookup(BASELINES[lie], toBaselineUnit(lie, distance, unit));
+  if (!baseline || baseline.type === 'pro') return proVal;
+  const hcp = baseline.type === 'scratch' ? 0 : (Number(baseline.value) || 0);
+  const cat = baselineAdjustCategory(lie, distance, unit);
+  const adj = interpAdjust(hcp, cat);
+  return 1 + (proVal - 1) * (1 + adj);
+}
+
+// Recovery (trees, hardpan, etc.) is always its own bucket, regardless of
+// distance — it's kept separate from Approach even for long recovery shots
+// and separate from Short Game even for short ones.
+// Recovery (trees, hardpan, etc.) is always its own bucket, regardless of
+// distance. Fringe always counts as Short Game — by definition it's the
+// collar right at the green's edge, matching how official strokes gained
+// treats fringe shots as "around the green" even when putted from there.
+function categoryFor(lie, distance, unit, par){
+  if (lie === 'tee') return par === 3 ? 'approach' : 'offTee';
+  if (lie === 'green') return 'putting';
+  if (lie === 'recovery') return 'recovery';
+  if (lie === 'fringe') return 'shortGame';
+  const yards = distanceInYards(lie, distance, unit);
+  return yards <= 30 ? 'shortGame' : 'approach';
+}
+
+const PUTT_RANGES = [
+  {key:'puttTapIn',   max:2,        label:'Tap-ins (0-2 ft)'},
+  {key:'puttShort',   max:5,        label:'Short (3-5 ft)'},
+  {key:'puttMakeable',max:15,       label:'Makeable (6-15 ft)'},
+  {key:'puttLong',    max:30,       label:'Long (15-30 ft)'},
+  {key:'puttLag',     max:Infinity, label:'Lag (30+ ft)'}
+];
+function puttRangeFor(distance, unit){
+  const feet = unit === 'yards' ? distance*3 : distance;
+  for (const r of PUTT_RANGES){ if (feet <= r.max) return r.key; }
+  return PUTT_RANGES[PUTT_RANGES.length-1].key;
+}
+
+const CATS = ['offTee','approach','recovery','shortGame','putting'];
+const CAT_LABEL = {offTee:'Off the Tee', approach:'Approach', recovery:'Recovery', shortGame:'Short Game', putting:'Putting'};
+function isPenaltyOutcome(o){ return o==='penaltyOB'||o==='penaltyHazard'||o==='unplayable'; }
+function outcomeLabel(o){
+  return {normal:'Normal', holed:'Holed out', penaltyOB:'Penalty (OB/lost)',
+    penaltyHazard:'Penalty (hazard drop)', unplayable:'Unplayable'}[o] || o;
+}
+
+/* Turn raw per-hole shot data (lie/distance/unit/outcome only) into fully
+   derived shots (startExpected/category/puttRange/sg) using whichever
+   baseline is passed in. Nothing about SG is ever pre-baked into storage,
+   so switching baselines recomputes every past round on the fly. */
+function deriveShots(rawShots, par, baseline){
+  const shots = rawShots.map(s=>Object.assign({}, s));
+  shots.forEach(s=>{
+    s.startExpected = expectedStrokes(s.lie, s.distance, s.unit, baseline);
+    s.category = categoryFor(s.lie, s.distance, s.unit, par);
+    s.puttRange = s.category === 'putting' ? puttRangeFor(s.distance, s.unit) : undefined;
+  });
+  for (let i=0;i<shots.length;i++){
+    const s = shots[i];
+    if (s.outcome == null){ s.sg = undefined; continue; }
+    if (s.outcome === 'holed'){ s.sg = s.startExpected - 0 - 1; continue; }
+    const next = shots[i+1];
+    if (next){
+      const penalty = isPenaltyOutcome(s.outcome) ? 1 : 0;
+      s.sg = s.startExpected - next.startExpected - 1 - penalty;
+    } else {
+      s.sg = undefined; // waiting on next shot, or hole ended early (pickup)
+    }
+  }
+  return shots;
+}
+
+// A hole counts toward the round only if it's been played (at least one
+// shot recorded) and hasn't been manually deleted from the record. Holes
+// that were skipped entirely during free navigation are excluded from
+// every total, just like manually-deleted holes, but still leave a gap in
+// the hole numbering rather than being renumbered away.
+function holeIsPlayed(h){
+  return !h.deleted && h.shots && h.shots.length > 0;
+}
+
+/* A penalty outcome (OB/lost, hazard drop, unplayable) adds a stroke to
+   the score that was never entered as its own shot — the penalty stroke
+   itself, played from essentially the same spot with no distance to
+   measure. So the true stroke count for a hole is not just the number of
+   shot entries; it's that plus one extra for every penalty incurred.
+   Computed live from each shot's stored outcome, so this is correct for
+   rounds saved before this was accounted for too — no migration needed. */
+function holeStrokeCount(hole){
+  if (!hole || !hole.shots) return 0;
+  let n = hole.shots.length;
+  hole.shots.forEach(s=>{ if (isPenaltyOutcome(s.outcome)) n += 1; });
+  return n;
+}
+function roundTotalStrokes(round){
+  return round.holes.reduce((a,h)=> holeIsPlayed(h) ? a + holeStrokeCount(h) : a, 0);
+}
+// Maps each real shot's array index to its true on-course stroke number,
+// accounting for the phantom penalty stroke inserted after any shot with
+// a penalty outcome (which consumes the next number before the following
+// real shot gets one).
+function computeDisplayShotNumbers(rawShots){
+  let num = 0;
+  return rawShots.map(s=>{
+    num += 1;
+    const n = num;
+    if (isPenaltyOutcome(s.outcome)) num += 1;
+    return n;
+  });
+}
+// The extra, non-clickable row representing the penalty stroke itself —
+// it has its own line and stroke number, but no lie/distance/edit
+// affordance, since no shot was actually hit for it.
+function penaltyStrokeRowHTML(num, outcome){
+  return `<div class="shot-item">
+    <div><b>Shot ${num}</b> · Penalty stroke
+      <div class="meta">${outcomeLabel(outcome)} · no shot hit</div>
+    </div>
+    <span class="muted">+1</span>
+  </div>`;
+}
+
+function computeRoundSG(round, baseline){
+  const totals = {offTee:0, approach:0, recovery:0, shortGame:0, putting:0};
+  const puttTotals = {puttTapIn:0, puttShort:0, puttMakeable:0, puttLong:0, puttLag:0};
+  const puttCounts = {puttTapIn:0, puttShort:0, puttMakeable:0, puttLong:0, puttLag:0};
+  let total = 0;
+  round.holes.forEach(h=>{
+    if (!holeIsPlayed(h)) return; // skipped/deleted — never played, excluded entirely
+    const shots = deriveShots(h.shots, h.par, baseline);
+    shots.forEach(s=>{
+      if (typeof s.sg === 'number'){
+        totals[s.category] += s.sg;
+        total += s.sg;
+        if (s.category === 'putting' && s.puttRange){
+          puttTotals[s.puttRange] += s.sg;
+          puttCounts[s.puttRange] += 1;
+        }
+      }
+    });
+  });
+  return {totals, total, puttTotals, puttCounts};
+}
+
+/* ===================== STORAGE ===================== */
+const LS_ROUNDS = 'sgt_rounds_v2';
+const LS_ACTIVE = 'sgt_active_v2';
+const LS_COURSES = 'sgt_courses_v1';
+const LS_BASELINE = 'sgt_baseline_v1';
+
+function loadRounds(){ try{ return JSON.parse(localStorage.getItem(LS_ROUNDS)) || []; }catch(e){ return []; } }
+function saveRounds(r){ localStorage.setItem(LS_ROUNDS, JSON.stringify(r)); }
+function loadActive(){ try{ return JSON.parse(localStorage.getItem(LS_ACTIVE)); }catch(e){ return null; } }
+function saveActive(r){ localStorage.setItem(LS_ACTIVE, JSON.stringify(r)); }
+function clearActive(){ localStorage.removeItem(LS_ACTIVE); }
+
+function loadCourses(){ try{ return JSON.parse(localStorage.getItem(LS_COURSES)) || []; }catch(e){ return []; } }
+function saveCourses(c){ localStorage.setItem(LS_COURSES, JSON.stringify(c)); }
+
+function getBaseline(){ try{ return JSON.parse(localStorage.getItem(LS_BASELINE)) || {type:'pro'}; }catch(e){ return {type:'pro'}; } }
+function setBaselineStore(b){ localStorage.setItem(LS_BASELINE, JSON.stringify(b)); }
+function baselineLabel(b){
+  if (!b || b.type==='pro') return 'Pro';
+  if (b.type==='scratch') return 'Scratch';
+  return 'Hcp ' + (b.value ?? 0);
+}
+
+/* Seed / one-time-correct the Porters Park (white) course. Yardages and
+   par-per-hole below were provided directly from the member's own
+   scorecard, replacing the earlier placeholder estimate. The migration
+   flag ensures this runs exactly once, so it won't clobber any further
+   manual edits made after this correction lands. */
+const PORTERS_PARK_WHITE = {
+  id:'course_porters_park_white',
+  name:'Porters Park (white)',
+  holesCount:18,
+  // Par 3s: holes 6, 9, 12, 14. Par 5s: holes 10, 13. All others par 4.
+  pars:     [4,4,4,4,4,3,4,4,3, 5,4,3,5,3,4,4,4,4],
+  yardages: [255,355,409,455,384,159,398,423,152, 476,431,201,505,159,355,414,384,450]
+};
+function seedDefaultCourses(){
+  const MIGRATION_KEY = 'sgt_seed_migration_porters_v2';
+  if (localStorage.getItem(MIGRATION_KEY)) return; // already migrated/seeded once
+  const courses = loadCourses();
+  const idx = courses.findIndex(c=>c.id === PORTERS_PARK_WHITE.id);
+  if (idx >= 0) courses[idx] = Object.assign({}, PORTERS_PARK_WHITE);
+  else courses.push(Object.assign({}, PORTERS_PARK_WHITE));
+  saveCourses(courses);
+  localStorage.setItem(MIGRATION_KEY, '1');
+}
+
+/* ===================== APP STATE ===================== */
+let state = {
+  round: null,
+  ui: { lie:null, distance:null, unit:'yards', showOtherOutcomes:false, greenOverride:false, lastRoundDetailIndex:null, roundDetailEditMode:false }
+};
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+document.querySelectorAll('[data-back]').forEach(b=>{
+  b.addEventListener('click', ()=> show(b.dataset.back));
+});
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+/* ===================== ACTION SHEET (generic) ===================== */
+function showActionSheet(title, actions){
+  const overlay = document.getElementById('actionSheetOverlay');
+  overlay.querySelector('.sheet-title-text').textContent = title;
+  const body = overlay.querySelector('.sheet-actions');
+  body.innerHTML = '';
+  actions.forEach(a=>{
+    const b = document.createElement('button');
+    b.className = 'btn ' + (a.className||'');
+    b.textContent = a.label;
+    b.addEventListener('click', ()=>{ hideActionSheet(); a.onClick(); });
+    body.appendChild(b);
+  });
+  overlay.classList.add('show');
+}
+function hideActionSheet(){ document.getElementById('actionSheetOverlay').classList.remove('show'); }
+document.getElementById('actionSheetOverlay').addEventListener('click', (e)=>{
+  if (e.target.id === 'actionSheetOverlay') hideActionSheet();
+});
+// Replacements for window.alert()/confirm(), which some mobile WebViews
+// silently no-op (they never show a dialog, and confirm() just returns
+// false), causing gated actions to appear to do nothing when tapped.
+function showAlert(message){
+  showActionSheet(message, [{label:'OK', onClick:()=>{}}]);
+}
+function showConfirm(message, confirmLabel, onConfirm){
+  showActionSheet(message, [
+    {label: confirmLabel || 'Confirm', className:'danger', onClick: onConfirm},
+    {label:'Cancel', onClick:()=>{}}
+  ]);
+}
+
+/* ===================== EDIT SHOT OVERLAY ===================== */
+let editShotDraft = {lie:'fairway', distance:0, unit:'yards'};
+let editShotOnSave = null;
+function openEditShotOverlay(shot, onSave){
+  editShotDraft = {lie: shot.lie, distance: shot.distance, unit: shot.unit};
+  editShotOnSave = onSave;
+  updateEditShotUI();
+  document.getElementById('editShotOverlay').classList.add('show');
+}
+function updateEditShotUI(){
+  document.querySelectorAll('#editShotOverlay [data-eslie]').forEach(b=>{
+    b.classList.toggle('sel', b.dataset.eslie === editShotDraft.lie);
+  });
+  document.querySelectorAll('#editShotOverlay [data-esunit]').forEach(b=>{
+    b.classList.toggle('sel', b.dataset.esunit === editShotDraft.unit);
+  });
+  document.getElementById('editShotDistInput').value = editShotDraft.distance ?? '';
+}
+document.querySelectorAll('#editShotOverlay [data-eslie]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    editShotDraft.lie = b.dataset.eslie;
+    if (editShotDraft.lie === 'green') editShotDraft.unit = 'feet';
+    updateEditShotUI();
+  });
+});
+document.querySelectorAll('#editShotOverlay [data-esunit]').forEach(b=>{
+  b.addEventListener('click', ()=>{ editShotDraft.unit = b.dataset.esunit; updateEditShotUI(); });
+});
+document.getElementById('editShotDistInput').addEventListener('input', (e)=>{
+  editShotDraft.distance = e.target.value;
+});
+document.querySelectorAll('#editShotOverlay [data-esstep]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const cur = parseFloat(document.getElementById('editShotDistInput').value)||0;
+    const next = Math.max(0, cur + parseInt(b.dataset.esstep,10));
+    document.getElementById('editShotDistInput').value = next;
+    editShotDraft.distance = next;
+  });
+});
+document.getElementById('btnSaveEditShot').addEventListener('click', ()=>{
+  const dist = parseFloat(editShotDraft.distance);
+  document.getElementById('editShotOverlay').classList.remove('show');
+  if (editShotOnSave) editShotOnSave(editShotDraft.lie, isNaN(dist)||dist<0 ? 0 : dist, editShotDraft.unit);
+});
+document.getElementById('btnCancelEditShot').addEventListener('click', ()=>{
+  document.getElementById('editShotOverlay').classList.remove('show');
+});
+
+/* ===================== BASELINE CHOOSER ===================== */
+let baselineDraft = {type:'pro', value:null};
+function openBaselineChooser(){
+  const cur = getBaseline();
+  baselineDraft = {type:cur.type, value: cur.type==='handicap' ? cur.value : null};
+  document.getElementById('handicapValueInput').value = baselineDraft.value ?? '';
+  document.getElementById('handicapInputBox').style.display = cur.type==='handicap' ? 'block' : 'none';
+  updateBaselineRadioUI();
+  document.getElementById('baselineOverlay').classList.add('show');
+}
+function updateBaselineRadioUI(){
+  document.querySelectorAll('#baselineOverlay [data-btype]').forEach(el=>{
+    el.classList.toggle('sel', el.dataset.btype === baselineDraft.type);
+  });
+}
+document.querySelectorAll('#baselineOverlay [data-btype]').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    baselineDraft.type = el.dataset.btype;
+    document.getElementById('handicapInputBox').style.display = baselineDraft.type==='handicap' ? 'block' : 'none';
+    updateBaselineRadioUI();
+  });
+});
+document.getElementById('btnSaveBaseline').addEventListener('click', ()=>{
+  let b;
+  if (baselineDraft.type==='handicap'){
+    const v = parseFloat(document.getElementById('handicapValueInput').value);
+    b = {type:'handicap', value: isNaN(v) ? 0 : v};
+  } else {
+    b = {type: baselineDraft.type};
+  }
+  setBaselineStore(b);
+  document.querySelectorAll('[data-baseline-pill]').forEach(el=> el.textContent = '🎯 '+baselineLabel(b));
+  document.getElementById('baselineOverlay').classList.remove('show');
+  refreshCurrentScreen();
+});
+document.getElementById('btnCancelBaseline').addEventListener('click', ()=>{
+  document.getElementById('baselineOverlay').classList.remove('show');
+});
+document.querySelectorAll('[data-baseline-pill]').forEach(el=>{
+  el.addEventListener('click', openBaselineChooser);
+});
+function refreshBaselinePills(){
+  document.querySelectorAll('[data-baseline-pill]').forEach(el=> el.textContent = '🎯 '+baselineLabel(getBaseline()));
+}
+function currentActiveScreenId(){
+  const el = document.querySelector('.screen.active');
+  return el ? el.id : null;
+}
+function refreshCurrentScreen(){
+  const id = currentActiveScreenId();
+  if (id==='screen-play') renderPlay();
+  else if (id==='screen-history') renderHistory();
+  else if (id==='screen-rounddetail' && state.ui.lastRoundDetailIndex!=null) renderRoundDetail(state.ui.lastRoundDetailIndex);
+  else if (id==='screen-trends') renderTrends();
+  else if (id==='screen-home') refreshHome();
+}
+
+/* ===================== HOME ===================== */
+function refreshHome(){
+  document.getElementById('resumeBox').style.display = loadActive() ? 'block' : 'none';
+  refreshBaselinePills();
+}
+document.getElementById('btnNewRound').addEventListener('click', ()=>{
+  document.getElementById('courseName').value = '';
+  buildParList(18, Array.from({length:18},()=>4), Array.from({length:18},()=>null));
+  renderSavedCoursesBox();
+  document.getElementById('courseNoteBox').style.display = 'none';
+  show('screen-newround');
+});
+document.getElementById('btnHistory').addEventListener('click', ()=>{ renderHistory(); show('screen-history'); });
+document.getElementById('btnTrends').addEventListener('click', ()=>{ renderTrends(); show('screen-trends'); });
+document.getElementById('btnResume').addEventListener('click', ()=>{
+  state.round = loadActive();
+  renderPlay();
+  show('screen-play');
+});
+
+/* ===================== SAVED COURSES (management) ===================== */
+function renderSavedCoursesBox(){
+  const courses = loadCourses();
+  const box = document.getElementById('savedCoursesBox');
+  const list = document.getElementById('savedCoursesList');
+  if (!courses.length){ box.style.display='none'; return; }
+  box.style.display = 'block';
+  list.innerHTML = courses.map((c,i)=>
+    `<button class="btn small" data-usecourse="${i}" style="width:100%; text-align:left;">${c.name} <span class="muted">(Par ${c.pars.reduce((a,p)=>a+p,0)}, ${c.holesCount}h)</span></button>`
+  ).join('');
+  list.querySelectorAll('[data-usecourse]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const c = courses[parseInt(b.dataset.usecourse,10)];
+      document.getElementById('courseName').value = c.name;
+      setupHoles = c.holesCount;
+      document.querySelectorAll('.holes-btn').forEach(x=> x.classList.toggle('sel', parseInt(x.dataset.holes,10)===c.holesCount));
+      buildParList(c.holesCount, c.pars.slice(), c.yardages.slice());
+      const noteBox = document.getElementById('courseNoteBox');
+      if (c.note){ noteBox.style.display='block'; noteBox.innerHTML = `<div class="banner">⚠️ ${c.note}</div>`; }
+      else noteBox.style.display='none';
+    });
+  });
+}
+document.getElementById('btnManageCourses').addEventListener('click', ()=>{ renderCoursesScreen(); show('screen-courses'); });
+
+function renderCoursesScreen(){
+  const courses = loadCourses();
+  const el = document.getElementById('coursesList');
+  if (!courses.length){ el.innerHTML = '<p class="muted">No saved courses yet.</p>'; return; }
+  el.innerHTML = courses.map((c,i)=>`
+    <div class="course-item">
+      <div><b>${c.name}</b><div class="muted">Par ${c.pars.reduce((a,p)=>a+p,0)} · ${c.holesCount} holes</div></div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn small" data-editcourse="${i}">Edit</button>
+        <button class="btn small danger" data-delcourse="${i}">Delete</button>
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('[data-editcourse]').forEach(b=>{
+    b.addEventListener('click', ()=> openCourseBuilder(parseInt(b.dataset.editcourse,10)));
+  });
+  el.querySelectorAll('[data-delcourse]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = parseInt(b.dataset.delcourse,10);
+      showConfirm('Delete this saved course?', 'Delete', ()=>{
+        const all = loadCourses(); all.splice(i,1); saveCourses(all); renderCoursesScreen();
+      });
+    });
+  });
+}
+document.getElementById('btnAddCourse').addEventListener('click', ()=> openCourseBuilder(null));
+
+let cbEditingIndex = null;
+let cbHoles = 18;
+function openCourseBuilder(index){
+  cbEditingIndex = index;
+  const courses = loadCourses();
+  const existing = index!=null ? courses[index] : null;
+  document.getElementById('courseBuilderTitle').textContent = existing ? 'Edit Course' : 'Add Course';
+  document.getElementById('cbName').value = existing ? existing.name : '';
+  cbHoles = existing ? existing.holesCount : 18;
+  document.querySelectorAll('.cb-holes-btn').forEach(x=> x.classList.toggle('sel', parseInt(x.dataset.holes,10)===cbHoles));
+  const pars = existing ? existing.pars.slice() : Array.from({length:cbHoles},()=>4);
+  const yardages = existing ? existing.yardages.slice() : Array.from({length:cbHoles},()=>null);
+  buildCbParList(cbHoles, pars, yardages);
+  const noteBox = document.getElementById('cbNoteBox');
+  if (existing && existing.note){ noteBox.style.display='block'; noteBox.innerHTML = `<div class="banner">⚠️ ${existing.note}</div>`; }
+  else noteBox.style.display='none';
+  show('screen-coursebuilder');
+}
+document.querySelectorAll('.cb-holes-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.cb-holes-btn').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');
+    cbHoles = parseInt(b.dataset.holes,10);
+    buildCbParList(cbHoles, Array.from({length:cbHoles},()=>4), Array.from({length:cbHoles},()=>null));
+  });
+});
+let cbPars = [], cbYardages = [];
+function buildCbParList(n, pars, yardages){
+  cbPars = pars; cbYardages = yardages;
+  const wrap = document.getElementById('cbParList');
+  wrap.innerHTML = '';
+  for (let i=0;i<n;i++){
+    const row = document.createElement('div');
+    row.className = 'par-picker';
+    row.innerHTML = `<span class="holeno">H${i+1}</span>` +
+      [3,4,5].map(p=>`<button type="button" class="par-num${pars[i]===p?' sel':''}" data-hole="${i}" data-par="${p}">${p}</button>`).join('') +
+      `<input type="number" class="yardage-input" data-yhole="${i}" placeholder="yds" value="${yardages[i] ?? ''}">`;
+    wrap.appendChild(row);
+  }
+  wrap.querySelectorAll('.par-num').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const hole = parseInt(btn.dataset.hole,10), par = parseInt(btn.dataset.par,10);
+      cbPars[hole] = par;
+      wrap.querySelectorAll(`.par-num[data-hole="${hole}"]`).forEach(x=>x.classList.remove('sel'));
+      btn.classList.add('sel');
+    });
+  });
+  wrap.querySelectorAll('.yardage-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const h = parseInt(inp.dataset.yhole,10);
+      const v = parseFloat(inp.value);
+      cbYardages[h] = isNaN(v) ? null : v;
+    });
+  });
+}
+document.getElementById('btnSaveCourse').addEventListener('click', ()=>{
+  const name = document.getElementById('cbName').value.trim();
+  if (!name){ showAlert('Please enter a course name.'); return; }
+  const courses = loadCourses();
+  const courseObj = {
+    id: cbEditingIndex!=null ? courses[cbEditingIndex].id : 'course_'+Date.now(),
+    name, holesCount: cbHoles, pars: cbPars.slice(), yardages: cbYardages.slice(),
+    note: cbEditingIndex!=null ? courses[cbEditingIndex].note : undefined
+  };
+  if (cbEditingIndex!=null) courses[cbEditingIndex] = courseObj; else courses.push(courseObj);
+  saveCourses(courses);
+  renderCoursesScreen();
+  show('screen-courses');
+});
+
+/* ===================== NEW ROUND SETUP ===================== */
+let setupHoles = 18;
+document.querySelectorAll('.holes-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.holes-btn').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');
+    setupHoles = parseInt(b.dataset.holes,10);
+    buildParList(setupHoles, Array.from({length:setupHoles},()=>4), Array.from({length:setupHoles},()=>null));
+    document.getElementById('courseNoteBox').style.display = 'none';
+  });
+});
+let setupPars = [], setupYardages = [];
+function buildParList(n, pars, yardages){
+  setupPars = pars; setupYardages = yardages;
+  const wrap = document.getElementById('parList');
+  wrap.innerHTML = '';
+  for (let i=0;i<n;i++){
+    const row = document.createElement('div');
+    row.className = 'par-picker';
+    row.innerHTML = `<span class="holeno">H${i+1}</span>` +
+      [3,4,5].map(p=>`<button type="button" class="par-num${pars[i]===p?' sel':''}" data-hole="${i}" data-par="${p}">${p}</button>`).join('') +
+      `<input type="number" class="yardage-input" data-yhole="${i}" placeholder="yds" value="${yardages[i] ?? ''}">`;
+    wrap.appendChild(row);
+  }
+  wrap.querySelectorAll('.par-num').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const hole = parseInt(btn.dataset.hole,10), par = parseInt(btn.dataset.par,10);
+      setupPars[hole] = par;
+      wrap.querySelectorAll(`.par-num[data-hole="${hole}"]`).forEach(x=>x.classList.remove('sel'));
+      btn.classList.add('sel');
+    });
+  });
+  wrap.querySelectorAll('.yardage-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const h = parseInt(inp.dataset.yhole,10);
+      const v = parseFloat(inp.value);
+      setupYardages[h] = isNaN(v) ? null : v;
+    });
+  });
+}
+
+document.getElementById('btnBeginRound').addEventListener('click', ()=>{
+  const course = document.getElementById('courseName').value.trim();
+  const round = {
+    id: 'r_'+Date.now(),
+    course: course || '(Unnamed course)',
+    date: new Date().toISOString(),
+    holesCount: setupHoles,
+    pars: setupPars.slice(),
+    yardages: setupYardages.slice(),
+    holes: setupPars.map(p=>({par:p, shots:[], complete:false})),
+    currentHole: 0
+  };
+  state.round = round;
+  state.ui.unit = 'yards';
+  state.ui.lie = null; state.ui.distance = null;
+  state.ui.showOtherOutcomes = false; state.ui.greenOverride = false;
+  saveActive(round);
+  renderPlay();
+  show('screen-play');
+});
+
+/* ===================== PLAY SCREEN ===================== */
+document.getElementById('btnPlayMenu').addEventListener('click', ()=>{
+  showActionSheet('Round Menu', [
+    {label:'Edit a Previous Hole', onClick: openPreviousHolesList},
+    {label:'Resume Later (Save & Exit)', onClick:()=>{ saveActive(state.round); refreshHome(); show('screen-home'); }},
+    {label:'End Round Now', className:'danger', onClick: attemptEndRoundEarly},
+    {label:'Cancel', onClick:()=>{}}
+  ]);
+});
+
+function openPreviousHolesList(){
+  const round = state.round;
+  const completedIndexes = [];
+  for (let hi=0; hi<round.currentHole; hi++){
+    if (round.holes[hi].shots.length > 0) completedIndexes.push(hi);
+  }
+  if (!completedIndexes.length){
+    showAlert('No completed holes yet to edit.');
+    return;
+  }
+  renderHoleListScreen(completedIndexes);
+  show('screen-holelist');
+}
+
+function renderHoleListScreen(completedIndexes){
+  const round = state.round;
+  const baseline = getBaseline();
+  const body = document.getElementById('holeListBody');
+  body.innerHTML = completedIndexes.map(hi=>{
+    const h = round.holes[hi];
+    const derived = deriveShots(h.shots, h.par, baseline);
+    const strokes = holeStrokeCount(h);
+    const hsg = derived.reduce((a,s)=>a+(typeof s.sg==='number'?s.sg:0),0);
+    return `<div class="hist-item" data-holereview="${hi}">
+      <div class="top"><span>Hole ${hi+1} · Par ${h.par} ${scoreBadgeHTML(strokes, h.par)}</span>${sgPillHTML(hsg,1)}</div>
+      <div class="muted">${strokes} strokes</div>
+    </div>`;
+  }).join('');
+  body.querySelectorAll('[data-holereview]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      renderHoleReview(parseInt(el.dataset.holereview,10));
+      show('screen-holereview');
+    });
+  });
+}
+
+function renderHoleReview(hi){
+  const round = state.round;
+  const hole = round.holes[hi];
+  const baseline = getBaseline();
+  const derived = deriveShots(hole.shots, hole.par, baseline);
+  const strokes = holeStrokeCount(hole);
+  const shotNums = computeDisplayShotNumbers(hole.shots);
+  const hsg = derived.reduce((a,s)=>a+(typeof s.sg==='number'?s.sg:0),0);
+  document.getElementById('holeReviewTitle').textContent = `Hole ${hi+1}`;
+
+  let shotsHtml = derived.map((s,si)=>{
+    const raw = hole.shots[si];
+    let finishTxt;
+    if (raw.outcome === 'holed') finishTxt = 'Holed out';
+    else if (hole.shots[si+1]) finishTxt = `${LIE_LABEL[hole.shots[si+1].lie]} · ${hole.shots[si+1].distance}${hole.shots[si+1].unit==='yards'?'y':'ft'} left`;
+    else finishTxt = 'Hole ended here';
+    let rowHtml = `<div class="shot-item" data-hredit="${si}" style="cursor:pointer;">
+      <div>Shot ${shotNums[si]}: ${LIE_LABEL[raw.lie]} · ${raw.distance}${raw.unit==='yards'?'y':'ft'}
+        <div class="meta">Finished: ${finishTxt}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        ${typeof s.sg==='number'? sgPillHTML(s.sg) : ''}
+        <span class="muted">✎</span>
+      </div>
+    </div>`;
+    if (isPenaltyOutcome(raw.outcome)) rowHtml += penaltyStrokeRowHTML(shotNums[si]+1, raw.outcome);
+    return rowHtml;
+  }).join('');
+
+  document.getElementById('holeReviewBody').innerHTML = `
+    <div class="card center">
+      <h2>Hole ${hi+1} · Par ${hole.par} ${scoreBadgeHTML(strokes, hole.par)}</h2>
+      <p style="font-size:32px; font-weight:800; margin:6px 0;">${strokes} strokes</p>
+      <p>Strokes Gained: ${sgPillHTML(hsg)}</p>
+    </div>
+    <div class="card"><label>Tap a shot to edit its lie or distance</label><div style="margin-top:6px;">${shotsHtml}</div></div>
+    <button class="btn primary" id="btnBackToHoleList">Back to Previous Holes</button>
+  `;
+  document.querySelectorAll('[data-hrEdit]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const si = parseInt(el.dataset.hredit,10);
+      const s = hole.shots[si];
+      openEditShotOverlay(s, (lie, dist, unit)=>{
+        s.lie = lie; s.distance = dist; s.unit = unit;
+        saveActive(state.round);
+        renderHoleReview(hi); // re-derive SG and re-render with the edit applied
+      });
+    });
+  });
+  document.getElementById('btnBackToHoleList').addEventListener('click', ()=>{
+    const completedIndexes = [];
+    for (let h=0; h<round.currentHole; h++){
+      if (round.holes[h].shots.length > 0) completedIndexes.push(h);
+    }
+    renderHoleListScreen(completedIndexes);
+    show('screen-holelist');
+  });
+}
+
+function attemptEndRoundEarly(){
+  const round = state.round;
+  const anyPlayed = round.holes.some(holeIsPlayed);
+  if (!anyPlayed){
+    showConfirm('No shots recorded yet — end without saving a round?', 'Discard', ()=>{
+      clearActive(); refreshHome(); show('screen-home');
+    });
+    return;
+  }
+  // No slicing by current position: with free hole-to-hole navigation, the
+  // hole you're sitting on doesn't tell you which holes have been played.
+  // completeRound() already excludes any unplayed hole from every total,
+  // wherever it sits in the array, so we can finalize as-is.
+  showConfirm('End round now? Any hole with no shots recorded is treated as unplayed and excluded — only holes you actually played will count toward your score and strokes gained.', 'End Round', ()=>{
+    completeRound();
+  });
+}
+
+// Formats a date as "27th August 2026"
+function ordinalSuffix(n){
+  if (n>=11 && n<=13) return 'th';
+  switch(n%10){ case 1: return 'st'; case 2: return 'nd'; case 3: return 'rd'; default: return 'th'; }
+}
+function formatDateOrdinal(dateObj){
+  const day = dateObj.getDate();
+  const month = dateObj.toLocaleString('en-US', {month:'long'});
+  const year = dateObj.getFullYear();
+  return `${day}${ordinalSuffix(day)} ${month} ${year}`;
+}
+
+// SG color tiers used everywhere a strokes-gained value is shown: green
+// above +0.10, red below -0.10, yellow for the neutral band in between
+// (rather than grey) — small enough to be noise, not clearly good or bad.
+const SG_NEUTRAL_BAND = 0.10;
+function sgColorClass(v){
+  if (v > SG_NEUTRAL_BAND) return 'pos';
+  if (v < -SG_NEUTRAL_BAND) return 'neg';
+  return 'zero';
+}
+
+// Shared "panel" builder: a card with its title rendered inside it,
+// consistent with the heading weight/size previously used for standalone
+// section headers like "Hole by hole". Use panel() when the whole body is
+// known upfront; use panelOpen()+"</div>" when content is appended
+// incrementally across multiple lines.
+function panel(title, innerHtml, extraAttrs=''){
+  return `<div class="card"${extraAttrs}><div class="panel-title">${title}</div>${innerHtml}</div>`;
+}
+function panelOpen(title, extraAttrs=''){
+  return `<div class="card"${extraAttrs}><div class="panel-title">${title}</div>`;
+}
+
+function sgPillHTML(v, decimals=2){
+  const cls = 'sg-' + sgColorClass(v);
+  const sign = v>0 ? '+' : '';
+  return `<span class="sg-pill ${cls}">${sign}${v.toFixed(decimals)}</span>`;
+}
+
+/* Traditional score-name coloring: Eagle (2+ under, yellow), Birdie (1
+   under, blue), Par (green), Bogey (1 over, dark red), Double Bogey or
+   worse (2+ over, black). */
+function scoreInfo(strokes, par){
+  const diff = strokes - par;
+  if (diff <= -2) return {label:'Eagle', cls:'score-eagle'};
+  if (diff === -1) return {label:'Birdie', cls:'score-birdie'};
+  if (diff === 0) return {label:'Par', cls:'score-evenpar'};
+  if (diff === 1) return {label:'Bogey', cls:'score-bogey'};
+  return {label: diff===2 ? 'Double Bogey' : `+${diff}`, cls:'score-doubleplus'};
+}
+// "+5" / "-3" / "E" relative-to-par text for a whole round's score
+function relToParText(diff){
+  if (diff === 0) return 'E';
+  return (diff > 0 ? '+' : '') + diff;
+}
+// Round/overall relative-to-par shown as a solid bubble like the
+// eagle/birdie/par/bogey hole badges — green for even-or-under, dark red
+// for over, since there's no single "hole name" equivalent at round level.
+function relToParBadgeHTML(diff){
+  const cls = diff <= 0 ? 'score-par' : 'score-bogey';
+  return `<span class="score-badge ${cls}">${relToParText(diff)}</span>`;
+}
+function scoreBadgeHTML(strokes, par){
+  const info = scoreInfo(strokes, par);
+  return `<span class="score-badge ${info.cls}">${info.label}</span>`;
+}
+
+// Shared scorecard grid (2 rows of 9 via CSS) used both right after
+// finishing a round and when reviewing a past round.
+// Pads out to the round's nominal hole count (not just holes.length), so
+// older saved rounds affected by a since-fixed bug — where a trailing
+// hole could go missing from the array entirely rather than being stored
+// as an empty/unplayed hole — still render a consistent blank cell for it
+// instead of just having no cell at all.
+// Renders exactly the holes actually present in the round's stored data —
+// no padding to a "nominal" hole count, since that count can't be trusted
+// for older rounds saved before a since-fixed early-finish bug. A hole
+// that's present but has no shots still renders as a blank "–" (it was
+// genuinely skipped mid-round), but a hole that was never stored at all
+// simply isn't shown.
+function scorecardGridHTML(holes){
+  return holes.map((h,hi)=>{
+    if (!holeIsPlayed(h)) return `<div class="scorecard-cell"><div class="holeno">${hi+1}</div><div class="strokes muted">–</div></div>`;
+    const strokes = holeStrokeCount(h);
+    const info = scoreInfo(strokes, h.par);
+    return `<div class="scorecard-cell ${info.cls}">
+      <div class="holeno">${hi+1}</div>
+      <div class="strokes">${strokes}</div>
+    </div>`;
+  }).join('');
+}
+
+/* Flattens every shot of a given SG category across a whole round, in
+   playing order, tagging each with its hole/shot number so it can be
+   listed inside an expanded category box. */
+function shotsForCategory(round, baseline, category){
+  const list = [];
+  round.holes.forEach((h, hi)=>{
+    if (h.deleted) return;
+    const derived = deriveShots(h.shots, h.par, baseline);
+    derived.forEach((s, si)=>{
+      if (s.category === category){
+        list.push({holeNum: hi+1, shotNum: si+1, lie:s.lie, distance:s.distance, unit:s.unit, sg:s.sg, puttRange:s.puttRange});
+      }
+    });
+  });
+  return list;
+}
+function categoryShotListHTML(items){
+  if (!items.length) return '<p class="muted" style="padding:4px 0;">No shots in this category.</p>';
+  return items.map(item=>{
+    const rangeLabel = item.puttRange ? ` · ${PUTT_RANGES.find(r=>r.key===item.puttRange).label.split(' (')[0]}` : '';
+    return `<div class="shot-item">
+      <div>Hole ${item.holeNum}, Shot ${item.shotNum} · ${LIE_LABEL[item.lie]} · ${item.distance}${item.unit==='yards'?'y':'ft'}${rangeLabel}</div>
+      ${typeof item.sg === 'number' ? sgPillHTML(item.sg) : '<span class="muted">pending…</span>'}
+    </div>`;
+  }).join('');
+}
+/* Builds the whole expandable "Off the Tee / Approach / ..." breakdown
+   card using native <details> so no extra click-tracking JS state is
+   needed — tapping a category just reveals its shot list inline. */
+function categoryBreakdownHTML(round, baseline, sg){
+  return CATS.map(c=>{
+    const items = shotsForCategory(round, baseline, c);
+    return `<details class="cat-details">
+      <summary class="cat-summary">
+        <span class="cat-label">${CAT_LABEL[c]} <span class="muted">(${items.length})</span><span class="chev">▸</span></span>
+        ${sgPillHTML(sg.totals[c])}
+      </summary>
+      <div class="cat-shotlist">${categoryShotListHTML(items)}</div>
+    </details>`;
+  }).join('');
+}
+
+/* Same idea as shotsForCategory, but filtered by putting distance range
+   rather than SG category — used to expand each putting-breakdown row. */
+function puttsForRange(round, baseline, rangeKey){
+  const list = [];
+  round.holes.forEach((h, hi)=>{
+    if (h.deleted) return;
+    const derived = deriveShots(h.shots, h.par, baseline);
+    derived.forEach((s, si)=>{
+      if (s.category === 'putting' && s.puttRange === rangeKey){
+        list.push({holeNum: hi+1, shotNum: si+1, lie:s.lie, distance:s.distance, unit:s.unit, sg:s.sg});
+      }
+    });
+  });
+  return list;
+}
+function puttingBreakdownHTML(round, baseline, sg){
+  return PUTT_RANGES.map(rg=>{
+    const items = puttsForRange(round, baseline, rg.key);
+    return `<details class="cat-details">
+      <summary class="cat-summary">
+        <span class="cat-label">${rg.label} <span class="muted">(${sg.puttCounts[rg.key]})</span><span class="chev">▸</span></span>
+        ${sgPillHTML(sg.puttTotals[rg.key])}
+      </summary>
+      <div class="cat-shotlist">${categoryShotListHTML(items)}</div>
+    </details>`;
+  }).join('');
+}
+
+function currentHoleObj(){ return state.round.holes[state.round.currentHole]; }
+
+function renderPlay(){
+  const round = state.round;
+  const hole = currentHoleObj();
+  const baseline = getBaseline();
+  document.getElementById('playHoleTitle').textContent = `Hole ${round.currentHole+1}/${round.holesCount} · Par ${hole.par}`;
+  refreshBaselinePills();
+  renderRoundStrip();
+
+  const derived = deriveShots(hole.shots, hole.par, baseline);
+  const body = document.getElementById('playBody');
+  const strokesSoFar = holeStrokeCount(hole);
+  const shotNums = computeDisplayShotNumbers(hole.shots);
+  const lastShotRaw = hole.shots[hole.shots.length-1];
+
+  let html = '';
+
+  if (hole.shots.length){
+    html += panelOpen('This hole') + '<div>';
+    derived.forEach((s,i)=>{
+      const distTxt = `${s.distance}${s.unit==='yards'?'y':'ft'}`;
+      const sgTxt = typeof s.sg === 'number' ? sgPillHTML(s.sg) : '<span class="muted">pending…</span>';
+      const rangeLabel = s.puttRange ? ' · ' + PUTT_RANGES.find(r=>r.key===s.puttRange).label.split(' (')[0] : '';
+      html += `<div class="shot-item">
+        <div><b>Shot ${shotNums[i]}</b> · ${LIE_LABEL[s.lie]} · ${distTxt}
+          <div class="meta">${CAT_LABEL[s.category]}${rangeLabel}${s.outcome ? ' · '+outcomeLabel(s.outcome):''}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${sgTxt}
+          <button class="btn small" data-editshot="${i}" style="padding:6px 10px;">✎</button>
+          <button class="btn small danger" data-delshot="${i}" style="padding:6px 10px;">🗑</button>
+        </div>
+      </div>`;
+      if (isPenaltyOutcome(s.outcome)) html += penaltyStrokeRowHTML(shotNums[i]+1, s.outcome);
+    });
+    html += `</div><div class="muted" style="margin-top:8px;">Strokes so far: ${strokesSoFar}</div></div>`;
+  }
+
+  // Entering a shot's position and its outcome are now one step: Normal
+  // is by far the common case, so "Confirm" assumes it directly rather
+  // than requiring a separate tap. Anything else (holed out, penalty,
+  // unplayable) is a deliberate, separate choice.
+  const isFirst = hole.shots.length === 0;
+  const shotNum = isFirst ? 1 : (shotNums[shotNums.length-1] + (isPenaltyOutcome(lastShotRaw.outcome) ? 2 : 1));
+  if (isFirst && (state.ui.distance == null || state.ui.distance === '') &&
+      round.yardages && round.yardages[round.currentHole] != null){
+    state.ui.distance = round.yardages[round.currentHole];
+  }
+  const assumeGreen = !isFirst && lastShotRaw.lie === 'green' && lastShotRaw.outcome === 'normal' && !state.ui.greenOverride;
+
+  if (assumeGreen){
+    state.ui.lie = 'green'; state.ui.unit = 'feet';
+    html += panelOpen(`Shot ${shotNum}`) + `
+      <div class="banner info">⛳ On the green — just enter feet remaining.</div>
+      <label style="display:block; margin-top:4px;">Distance to flag for shot ${shotNum}</label>
+      <div class="stepper">
+        <button data-step="-1">−</button>
+        <input type="number" id="distInput" inputmode="numeric" value="${state.ui.distance ?? ''}" placeholder="0">
+        <button data-step="1">+</button>
+      </div>
+      <span class="muted">feet</span>
+      <button class="btn small" id="btnGreenOverride" style="margin-top:10px;">Not on the green? Change lie</button>
+    </div>`;
+  } else {
+    if (isFirst){
+      state.ui.lie = state.ui.lie || 'tee';
+    } else if (state.ui.lie == null){
+      state.ui.lie = lastShotRaw.lie; // suggest same lie as previous shot's lie by default
+    }
+    if (state.ui.unit == null) state.ui.unit = state.ui.lie === 'green' ? 'feet' : 'yards';
+    const freshBanner = !isFirst && lastShotRaw.outcome !== 'normal';
+
+    html += panelOpen(`Shot ${shotNum}`);
+    if (freshBanner){
+      html += `<div class="banner">📍 Fresh drop location — re-measure the actual distance from here, it is not a continuation of the previous shot.</div>`;
+    }
+    if (state.ui.greenOverride){
+      html += `<div class="banner info">Left the green — pick the actual lie below.</div>`;
+    }
+    html += `<label>${isFirst ? 'Starting lie' : 'Lie'}</label>
+      <div class="grid4" style="margin-top:6px;">
+        ${['tee','fairway','rough','sand','fringe','recovery','green'].map(l=>lieBtn(l)).join('')}
+      </div>`;
+
+    html += `<label style="margin-top:14px; display:block;">Distance to flag for shot ${shotNum}</label>
+      <div class="unit-toggle">
+        <div data-unit="yards" class="${state.ui.unit==='yards'?'sel':''}">Yards</div>
+        <div data-unit="feet" class="${state.ui.unit==='feet'?'sel':''}">Feet</div>
+      </div>
+      <div class="stepper">
+        <button data-step="-1">−</button>
+        <input type="number" id="distInput" inputmode="numeric" value="${state.ui.distance ?? ''}" placeholder="0">
+        <button data-step="1">+</button>
+      </div>
+      </div>`;
+  }
+
+  html += `<div class="grid2" style="margin-top:14px;">
+    <button class="btn primary" data-confirm="normal">Confirm</button>
+    <button class="btn primary" data-confirm="holed">Confirm &amp; Holed Out</button>
+  </div>
+  <button class="btn small" id="btnToggleOtherOutcomes" style="margin-top:8px;">${state.ui.showOtherOutcomes ? 'Hide other outcomes' : 'Something else happened? (penalty / unplayable)'}</button>`;
+  if (state.ui.showOtherOutcomes){
+    html += `<div class="grid2" style="margin-top:10px;">
+      <button class="outcome-btn penalty" data-confirm="penaltyOB">Penalty: OB / Lost</button>
+      <button class="outcome-btn penalty" data-confirm="penaltyHazard">Penalty: Hazard drop</button>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="outcome-btn unplayable" data-confirm="unplayable" style="width:100%;">Unplayable (+1 penalty)</button>
+    </div>`;
+  }
+
+  body.innerHTML = html;
+  renderHoleNavHeader();
+  wirePlayEvents();
+}
+
+function renderHoleNavHeader(){
+  const round = state.round;
+  document.getElementById('holeNavHeader').innerHTML = `
+    <button class="hole-nav-arrow" id="btnPrevHoleTop" ${round.currentHole===0?'disabled':''}>◂</button>
+    <span class="hole-nav-title">Hole ${round.currentHole+1}</span>
+    <button class="hole-nav-arrow" id="btnNextHoleTop" ${round.currentHole+1>=round.holesCount?'disabled':''}>▸</button>
+  `;
+  const btnPrevTop = document.getElementById('btnPrevHoleTop');
+  if (btnPrevTop) btnPrevTop.addEventListener('click', ()=> navigateHole(-1));
+  const btnNextTop = document.getElementById('btnNextHoleTop');
+  if (btnNextTop) btnNextTop.addEventListener('click', ()=> navigateHole(1));
+}
+
+function lieBtn(l, fullWidth){
+  const sel = state.ui.lie === l ? 'sel' : '';
+  const style = fullWidth ? ' style="width:100%; display:block;"' : '';
+  return `<button type="button" class="lie-btn ${sel}"${style} data-lie="${l}">${LIE_LABEL[l]}</button>`;
+}
+
+function wirePlayEvents(){
+  document.querySelectorAll('.lie-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      state.ui.lie = b.dataset.lie;
+      state.ui.unit = state.ui.lie === 'green' ? 'feet' : 'yards';
+      renderPlay();
+    });
+  });
+  document.querySelectorAll('[data-unit]').forEach(b=>{
+    b.addEventListener('click', ()=>{ state.ui.unit = b.dataset.unit; renderPlay(); });
+  });
+  const distInput = document.getElementById('distInput');
+  if (distInput){
+    distInput.addEventListener('input', ()=>{ state.ui.distance = distInput.value; });
+    document.querySelectorAll('[data-step]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const cur = parseFloat(distInput.value)||0;
+        const step = parseInt(b.dataset.step,10);
+        const next = Math.max(0, cur+step);
+        distInput.value = next;
+        state.ui.distance = next;
+      });
+    });
+  }
+  const greenOverrideBtn = document.getElementById('btnGreenOverride');
+  if (greenOverrideBtn) greenOverrideBtn.addEventListener('click', ()=>{
+    state.ui.greenOverride = true; state.ui.lie = null; state.ui.distance = null;
+    renderPlay();
+  });
+  document.querySelectorAll('[data-confirm]').forEach(b=>{
+    b.addEventListener('click', ()=> confirmShot(b.dataset.confirm));
+  });
+  const toggleOtherBtn = document.getElementById('btnToggleOtherOutcomes');
+  if (toggleOtherBtn){
+    toggleOtherBtn.addEventListener('click', ()=>{
+      state.ui.showOtherOutcomes = !state.ui.showOtherOutcomes;
+      renderPlay();
+    });
+  }
+  document.querySelectorAll('[data-delshot]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = parseInt(b.dataset.delshot,10);
+      showConfirm('Delete this shot? Later shots in this hole will need to be re-entered.', 'Delete', ()=>{
+        const hole = currentHoleObj();
+        hole.shots.splice(i);
+        state.ui.lie=null; state.ui.distance=null; state.ui.greenOverride=false; state.ui.showOtherOutcomes=false;
+        saveActive(state.round);
+        renderPlay();
+      });
+    });
+  });
+  document.querySelectorAll('[data-editshot]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const i = parseInt(b.dataset.editshot,10);
+      const hole = currentHoleObj();
+      const s = hole.shots[i];
+      openEditShotOverlay(s, (lie, dist, unit)=>{
+        s.lie = lie; s.distance = dist; s.unit = unit;
+        saveActive(state.round);
+        renderPlay();
+      });
+    });
+  });
+}
+
+// Free navigation between holes — lets you skip around, come back later,
+// or leave a hole partially played without being forced to finish it.
+function navigateHole(delta){
+  const round = state.round;
+  const next = round.currentHole + delta;
+  if (next < 0 || next >= round.holesCount) return;
+  round.currentHole = next;
+  state.ui.lie = null; state.ui.distance = null; state.ui.unit = 'yards';
+  state.ui.showOtherOutcomes = false; state.ui.greenOverride = false;
+  saveActive(round);
+  renderPlay();
+}
+
+// Compact, tap-to-jump strip of every hole's status: a gap for holes with
+// no shots yet, an "in progress" tone for holes started but not finished
+// (last shot missing an outcome or its ending position), and a colored SG
+// total once a hole is fully resolved.
+function renderRoundStrip(){
+  const round = state.round;
+  const baseline = getBaseline();
+  const sg = computeRoundSG(round, baseline);
+  const totalCls = sgColorClass(sg.total);
+  const totalSign = sg.total>0 ? '+' : '';
+  document.getElementById('rstripTotal').innerHTML =
+    `<div class="rstrip-cell rstrip-total ${totalCls}"><div class="hn">Total</div><div class="val">${totalSign}${sg.total.toFixed(1)}</div></div>`;
+
+  const html = round.holes.map((h, hi)=>{
+    const isCurrent = hi === round.currentHole;
+    const curCls = isCurrent ? 'current' : '';
+    if (!h.shots.length){
+      return `<div class="rstrip-cell gap ${curCls}" data-jumphole="${hi}"><div class="hn">${hi+1}</div><div class="val">–</div></div>`;
+    }
+    const derived = deriveShots(h.shots, h.par, baseline);
+    const resolved = derived.every(s=>typeof s.sg === 'number');
+    if (!resolved){
+      return `<div class="rstrip-cell inprogress ${curCls}" data-jumphole="${hi}"><div class="hn">${hi+1}</div><div class="val">…</div></div>`;
+    }
+    const holeSG = derived.reduce((a,s)=>a+s.sg,0);
+    const cls = sgColorClass(holeSG);
+    const sign = holeSG>0 ? '+' : '';
+    return `<div class="rstrip-cell ${cls} ${curCls}" data-jumphole="${hi}"><div class="hn">${hi+1}</div><div class="val">${sign}${holeSG.toFixed(1)}</div></div>`;
+  }).join('');
+  const strip = document.getElementById('roundStrip');
+  strip.innerHTML = html;
+  strip.querySelectorAll('[data-jumphole]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const hi = parseInt(el.dataset.jumphole,10);
+      if (hi === round.currentHole) return;
+      round.currentHole = hi;
+      state.ui.lie = null; state.ui.distance = null; state.ui.unit = 'yards';
+      state.ui.showOtherOutcomes = false; state.ui.greenOverride = false;
+      saveActive(round);
+      renderPlay();
+    });
+  });
+  // Keep the current hole's cell in view as the round progresses.
+  const currentCell = strip.querySelector('.rstrip-cell.current');
+  if (currentCell) currentCell.scrollIntoView({inline:'center', block:'nearest'});
+  updateStripFades();
+}
+
+// Hides the left/right edge fades on the scrollable strip once there's
+// nothing further to scroll toward in that direction.
+// Fades the strip's own edges by masking its alpha channel directly,
+// rather than layering an overlay on top — sidesteps any z-index/
+// compositing quirks a given WebView might have with stacked overlays.
+function updateStripFades(){
+  const wrap = document.getElementById('rstripWrap');
+  if (!wrap) return;
+  const maxScroll = wrap.scrollWidth - wrap.clientWidth;
+  const atStart = wrap.scrollLeft <= 2;
+  const atEnd = wrap.scrollLeft >= maxScroll - 2;
+  const fw = '18px'; // fade transition distance (halved from 36px)
+  let maskVal;
+  if (atStart && atEnd){
+    maskVal = 'none'; // everything fits, nothing to fade
+  } else if (atStart){
+    maskVal = `linear-gradient(to right, #000 0, #000 calc(100% - ${fw}), transparent 100%)`;
+  } else if (atEnd){
+    maskVal = `linear-gradient(to right, transparent 0, #000 ${fw}, #000 100%)`;
+  } else {
+    maskVal = `linear-gradient(to right, transparent 0, #000 ${fw}, #000 calc(100% - ${fw}), transparent 100%)`;
+  }
+  wrap.style.webkitMaskImage = maskVal;
+  wrap.style.maskImage = maskVal;
+}
+(function wireStripFadeScroll(){
+  const wrap = document.getElementById('rstripWrap');
+  if (wrap) wrap.addEventListener('scroll', updateStripFades, {passive:true});
+})();
+
+// Combines "confirm this shot's position" and "what happened" into one
+// step, since Normal is the overwhelmingly common case and shouldn't
+// need its own extra tap.
+function confirmShot(outcome){
+  const hole = currentHoleObj();
+  const dist = parseFloat(state.ui.distance);
+  if (isNaN(dist) || dist < 0){ showAlert('Enter a valid distance from your rangefinder.'); return; }
+  hole.shots.push({lie: state.ui.lie, distance: dist, unit: state.ui.unit, outcome});
+  state.ui.lie = null; state.ui.distance = null;
+  state.ui.showOtherOutcomes = false; state.ui.greenOverride = false;
+  saveActive(state.round);
+  if (outcome === 'holed'){ finishHole(); return; }
+  renderPlay();
+}
+
+function finishHole(){
+  const round = state.round;
+  const hole = currentHoleObj();
+  hole.complete = true;
+  const baseline = getBaseline();
+  const derived = deriveShots(hole.shots, hole.par, baseline);
+  const strokes = holeStrokeCount(hole);
+  const shotNums = computeDisplayShotNumbers(hole.shots);
+  const sg = derived.reduce((a,s)=> a + (typeof s.sg==='number'? s.sg:0), 0);
+
+  let shotsHtml = derived.map((s,i)=>{
+    const raw = hole.shots[i];
+    let finishTxt;
+    if (raw.outcome === 'holed') finishTxt = 'Holed out';
+    else if (hole.shots[i+1]) finishTxt = `${LIE_LABEL[hole.shots[i+1].lie]} · ${hole.shots[i+1].distance}${hole.shots[i+1].unit==='yards'?'y':'ft'} left`;
+    else finishTxt = 'Hole ended here';
+    let rowHtml = `<div class="shot-item" data-editholeshot="${i}" style="cursor:pointer;">
+      <div>Shot ${shotNums[i]}: ${LIE_LABEL[raw.lie]} · ${raw.distance}${raw.unit==='yards'?'y':'ft'}
+        <div class="meta">Finished: ${finishTxt}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        ${typeof s.sg==='number'? sgPillHTML(s.sg) : ''}
+        <span class="muted">✎</span>
+      </div>
+    </div>`;
+    if (isPenaltyOutcome(raw.outcome)) rowHtml += penaltyStrokeRowHTML(shotNums[i]+1, raw.outcome);
+    return rowHtml;
+  }).join('');
+
+  document.getElementById('holeSummaryBody').innerHTML = `
+    <div class="card center">
+      <h2>Hole ${round.currentHole+1} · Par ${hole.par}</h2>
+      <p style="font-size:32px; font-weight:800; margin:6px 0;">${strokes} strokes</p>
+      <p>Strokes Gained: ${sgPillHTML(sg)}</p>
+    </div>
+    <div class="card"><label>Tap a shot to edit its lie or distance</label><div style="margin-top:6px;">${shotsHtml}</div></div>
+    <button class="btn primary" id="btnNextHole">${round.currentHole+1 < round.holesCount ? 'Next Hole' : 'Finish Round'}</button>
+  `;
+  document.querySelectorAll('[data-editholeshot]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const i = parseInt(el.dataset.editholeshot,10);
+      const s = hole.shots[i];
+      openEditShotOverlay(s, (lie, dist, unit)=>{
+        s.lie = lie; s.distance = dist; s.unit = unit;
+        saveActive(state.round);
+        finishHole(); // re-derive SG and re-render with the edit applied
+      });
+    });
+  });
+  document.getElementById('btnNextHole').addEventListener('click', ()=>{
+    if (round.currentHole+1 < round.holesCount){
+      navigateHole(1);
+      show('screen-play');
+    } else {
+      completeRound();
+    }
+  });
+  saveActive(round);
+  show('screen-holesummary');
+}
+
+function completeRound(){
+  const round = state.round;
+  const saved = {
+    id: round.id, course: round.course, date: round.date,
+    holesCount: round.holesCount, pars: round.pars,
+    totalStrokes: roundTotalStrokes(round),
+    totalPar: round.holes.reduce((a,h)=> holeIsPlayed(h) ? a + h.par : a, 0),
+    holes: round.holes
+  };
+  const rounds = loadRounds();
+  rounds.unshift(saved);
+  saveRounds(rounds);
+  clearActive();
+
+  const baseline = getBaseline();
+  const sg = computeRoundSG(saved, baseline);
+  const playedHoles = saved.holes.filter(holeIsPlayed).length;
+  const scorecardHTML = scorecardGridHTML(saved.holes);
+  let body = `
+    <div class="card center">
+      <h2>${round.course}</h2>
+      <p style="font-size:36px; font-weight:800; margin:6px 0;">${saved.totalStrokes}</p>
+      <p class="muted">Par ${saved.totalPar} ${relToParBadgeHTML(saved.totalStrokes-saved.totalPar)} · ${playedHoles} holes</p>
+      <p style="margin-top:10px;">Total Strokes Gained: ${sgPillHTML(sg.total)}</p>
+    </div>`;
+  body += panel('Scorecard', `<div class="scorecard-grid">${scorecardHTML}</div>`);
+  body += panel('Strokes gained breakdown', categoryBreakdownHTML(saved, baseline, sg));
+  body += panel('Putting breakdown', puttingBreakdownHTML(saved, baseline, sg));
+  body += `<button class="btn primary" id="btnBackHomeFromSummary">Back to Home</button>`;
+  document.getElementById('roundSummaryBody').innerHTML = body;
+  document.getElementById('btnBackHomeFromSummary').addEventListener('click', ()=>{ refreshHome(); show('screen-home'); });
+  show('screen-roundsummary');
+}
+
+/* ===================== HISTORY ===================== */
+function renderHistory(){
+  refreshBaselinePills();
+  const baseline = getBaseline();
+  const rounds = loadRounds();
+  const list = document.getElementById('historyList');
+  if (!rounds.length){ list.innerHTML = '<p class="muted">No saved rounds yet.</p>'; return; }
+  list.innerHTML = rounds.map((r,i)=>{
+    const d = new Date(r.date);
+    const sg = computeRoundSG(r, baseline);
+    const playedHoles = r.holes.filter(holeIsPlayed).length;
+    const totalStrokes = roundTotalStrokes(r);
+    return `<div class="hist-item" data-round="${i}">
+      <div class="top"><span>${r.course}</span><span>${totalStrokes} ${relToParBadgeHTML(totalStrokes - r.totalPar)}</span></div>
+      <div class="muted">${formatDateOrdinal(d)} · ${playedHoles} holes</div>
+      <div style="margin-top:6px;">Total SG: ${sgPillHTML(sg.total)}</div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.hist-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      state.ui.roundDetailEditMode = false; // always open a round fresh, not mid-edit
+      renderRoundDetail(parseInt(el.dataset.round,10));
+    });
+  });
+}
+
+function renderRoundDetail(i){
+  state.ui.lastRoundDetailIndex = i;
+  refreshBaselinePills();
+  const baseline = getBaseline();
+  const rounds = loadRounds();
+  const r = rounds[i];
+  const sg = computeRoundSG(r, baseline);
+  const totalStrokes = roundTotalStrokes(r);
+  const editMode = !!state.ui.roundDetailEditMode;
+  document.getElementById('rdTitle').textContent = r.course;
+  let html = panel('Summary', `
+    <div class="stat-row"><span>Date</span><span>${formatDateOrdinal(new Date(r.date))}</span></div>
+    <div class="stat-row"><span>Score</span><span>${totalStrokes} ${relToParBadgeHTML(totalStrokes - r.totalPar)}</span></div>
+    <div class="stat-row"><span>Total SG</span>${sgPillHTML(sg.total)}</div>
+  `);
+  html += panel('Scorecard', `<div class="scorecard-grid">${scorecardGridHTML(r.holes)}</div>`, ' style="margin-top:16px;"');
+  html += panel('Strokes gained breakdown', categoryBreakdownHTML(r, baseline, sg), ' style="margin-top:16px;"');
+  html += panel('Putting breakdown', puttingBreakdownHTML(r, baseline, sg), ' style="margin-top:16px;"');
+  html += panelOpen('Hole by hole', ' style="margin-top:16px;"');
+
+  r.holes.forEach((h,hi)=>{
+    if (!holeIsPlayed(h)) return; // preserve hole numbering — this hole is skipped, not renumbered
+    const derived = deriveShots(h.shots, h.par, baseline);
+    const strokes = holeStrokeCount(h);
+    const shotNums = computeDisplayShotNumbers(h.shots);
+    const hsg = derived.reduce((a,s)=>a+(typeof s.sg==='number'?s.sg:0),0);
+    html += `<div class="hole-block">
+      <div class="stat-row"><b>Hole ${hi+1} · Par ${h.par} ${scoreBadgeHTML(strokes, h.par)}</b><span>${sgPillHTML(hsg,1)}</span></div>`;
+    if (editMode){
+      html += `<button class="btn small danger" data-delhole="${hi}" style="margin:8px 0 4px 0;">Delete this hole</button>`;
+    }
+    derived.forEach((s,si)=>{
+      const rangeLabel = s.puttRange ? ' · ' + PUTT_RANGES.find(r2=>r2.key===s.puttRange).label.split(' (')[0] : '';
+      const next = h.shots[si+1];
+      const finishTxt = s.outcome==='holed' ? 'Holed out' : (next ? `${LIE_LABEL[next.lie]} · ${next.distance}${next.unit==='yards'?'y':'ft'} left` : 'Hole ended here');
+      if (editMode){
+        html += `<div class="shot-item" data-rdedit-hole="${hi}" data-rdedit-shot="${si}" style="cursor:pointer;">
+          <div>Shot ${shotNums[si]} · ${LIE_LABEL[s.lie]} · ${s.distance}${s.unit==='yards'?'y':'ft'}
+            <div class="meta">${CAT_LABEL[s.category]}${rangeLabel} · ${finishTxt}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${typeof s.sg==='number'? sgPillHTML(s.sg) : ''}
+            <span class="muted">✎</span>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="shot-item">
+          <div>Shot ${shotNums[si]} · ${LIE_LABEL[s.lie]} · ${s.distance}${s.unit==='yards'?'y':'ft'}
+            <div class="meta">${CAT_LABEL[s.category]}${rangeLabel} · ${finishTxt}</div>
+          </div>
+          ${typeof s.sg==='number'? sgPillHTML(s.sg) : ''}
+        </div>`;
+      }
+      if (isPenaltyOutcome(s.outcome)){
+        html += penaltyStrokeRowHTML(shotNums[si]+1, s.outcome);
+      }
+    });
+    html += `</div>`;
+  });
+  html += `</div>`; // close Hole by hole panel
+
+  html += `<div class="card">
+    <button class="btn" id="btnToggleEditRound">${editMode ? 'Done Editing' : 'Edit Round'}</button>
+    <button class="btn danger" id="btnDeleteRound">Delete this round</button>
+  </div>`;
+
+  document.getElementById('rdBody').innerHTML = html;
+  document.getElementById('btnToggleEditRound').addEventListener('click', ()=>{
+    state.ui.roundDetailEditMode = !state.ui.roundDetailEditMode;
+    renderRoundDetail(i);
+  });
+  document.querySelectorAll('[data-rdedit-hole]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const hi = parseInt(el.dataset.rdeditHole,10);
+      const si = parseInt(el.dataset.rdeditShot,10);
+      const all = loadRounds();
+      const round = all[i];
+      const s = round.holes[hi].shots[si];
+      openEditShotOverlay(s, (lie, dist, unit)=>{
+        s.lie = lie; s.distance = dist; s.unit = unit;
+        saveRounds(all);
+        renderRoundDetail(i); // re-derive SG and re-render with the edit applied
+      });
+    });
+  });
+  document.querySelectorAll('[data-delhole]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const hi = parseInt(el.dataset.delhole,10);
+      const all = loadRounds();
+      const round = all[i];
+      const remaining = round.holes.filter(holeIsPlayed).length;
+      if (remaining <= 1){
+        showAlert("Can't delete the last remaining hole in this round — delete the whole round instead.");
+        return;
+      }
+      showConfirm(`Delete Hole ${hi+1} from this round? It'll be skipped (not renumbered) and excluded from your score and strokes-gained totals. This can't be undone.`, 'Delete Hole', ()=>{
+        // Mark as deleted rather than splicing the array, so later hole
+        // numbers (e.g. Hole 11) don't shift down to fill the gap.
+        round.holes[hi].deleted = true;
+        round.totalStrokes = roundTotalStrokes(round);
+        round.totalPar = round.holes.filter(holeIsPlayed).reduce((a,h)=>a+h.par,0);
+        round.holesCount = round.holes.filter(holeIsPlayed).length;
+        saveRounds(all);
+        renderRoundDetail(i);
+      });
+    });
+  });
+  document.getElementById('btnDeleteRound').addEventListener('click', ()=>{
+    showConfirm('Delete this round permanently?', 'Delete', ()=>{
+      const all = loadRounds();
+      all.splice(i,1);
+      saveRounds(all);
+      renderHistory();
+      show('screen-history');
+    });
+  });
+  show('screen-rounddetail');
+}
+
+/* ===================== TRENDS ===================== */
+function renderTrends(){
+  refreshBaselinePills();
+  const baseline = getBaseline();
+  const rounds = loadRounds().slice().reverse();
+  const body = document.getElementById('trendsBody');
+  if (rounds.length < 1){ body.innerHTML = '<p class="muted">Play and save a round to see trends.</p>'; return; }
+  const sgList = rounds.map(r=>computeRoundSG(r, baseline));
+  const totals = sgList.map(s=>s.total);
+  body.innerHTML = panel('Total Strokes Gained', lineChart(totals)) +
+    CATS.map((c,ci)=>{
+      const vals = sgList.map(s=>s.totals[c]);
+      return panel(CAT_LABEL[c], lineChart(vals));
+    }).join('') +
+    PUTT_RANGES.map(rg=>{
+      const vals = sgList.map(s=>s.puttTotals[rg.key]);
+      return panel(rg.label, lineChart(vals));
+    }).join('');
+}
+
+function lineChart(values){
+  const w=480,h=160,pad=28;
+  const min = Math.min(0, ...values), max = Math.max(0, ...values);
+  const range = (max-min)||1;
+  const n = values.length;
+  const x = i => n===1 ? w/2 : pad + (i/(n-1))*(w-2*pad);
+  const y = v => h-pad - ((v-min)/range)*(h-2*pad);
+  const zeroY = y(0);
+  let path = values.map((v,i)=> `${i===0?'M':'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const dots = values.map((v,i)=>{
+    const col = v>=0 ? 'var(--green)' : 'var(--red)';
+    return `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="${col}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
+    <line x1="${pad}" y1="${zeroY.toFixed(1)}" x2="${w-pad}" y2="${zeroY.toFixed(1)}" stroke="#ccc" stroke-width="1"/>
+    <path d="${path}" fill="none" stroke="#0b6e2e" stroke-width="2.5"/>
+    ${dots}
+  </svg>`;
+}
+
+/* ===================== PWA: MANIFEST + SERVICE WORKER ===================== */
+(function setupPWA(){
+  try{
+    const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="18" fill="#0b6e2e"/>
+      <circle cx="50" cy="42" r="20" fill="#fff"/>
+      <rect x="47" y="42" width="6" height="40" fill="#fff"/>
+    </svg>`;
+    const iconUrl = 'data:image/svg+xml;base64,' + btoa(iconSvg);
+    const manifest = {
+      name: "Strokes Gained Tracker", short_name: "SG Tracker", start_url: ".",
+      display: "standalone", background_color: "#ffffff", theme_color: "#0b6e2e",
+      icons: [{src: iconUrl, sizes: "100x100", type: "image/svg+xml"}]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = URL.createObjectURL(manifestBlob);
+    document.head.appendChild(link);
+  }catch(e){ console.warn('Manifest setup skipped:', e); }
+
+  // Best-effort service worker registration from a Blob URL. This is not
+  // guaranteed by spec (SW scripts are normally required to be same-origin
+  // http/https files) but works in many Chromium browsers. If it fails,
+  // the app still works fully offline while the tab stays loaded, since
+  // all logic/storage is already local with zero network calls. For
+  // guaranteed install-and-reload-while-offline behavior, host this file
+  // at a real https:// URL.
+  if ('serviceWorker' in navigator){
+    try{
+      const swSource = `
+        const CACHE = 'sgt-shell-v2';
+        self.addEventListener('install', e=>{
+          self.skipWaiting();
+          e.waitUntil(caches.open(CACHE).then(c=>c.add(self.registration.scope)).catch(()=>{}));
+        });
+        self.addEventListener('activate', e=> self.clients.claim());
+        self.addEventListener('fetch', e=>{
+          e.respondWith(
+            caches.match(e.request).then(cached=>{
+              if (cached) return cached;
+              return fetch(e.request).then(resp=>{
+                const copy = resp.clone();
+                caches.open(CACHE).then(c=>c.put(e.request, copy)).catch(()=>{});
+                return resp;
+              }).catch(()=> cached);
+            })
+          );
+        });
+      `;
+      const swBlob = new Blob([swSource], {type:'application/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(err=>{
+        console.warn('Service worker registration skipped (expected on some browsers/file://):', err);
+      });
+    }catch(e){ console.warn('SW setup skipped:', e); }
+  }
+})();
+
+/* ===================== INIT ===================== */
+seedDefaultCourses();
+refreshHome();
+</script>
+</body>
+</html>
